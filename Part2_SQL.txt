@@ -1,0 +1,77 @@
+CREATE TABLE Sites{
+	SiteID int,
+	Nom varchar(255),
+	UrlRacine varchar(500)
+};
+
+CREATE TABLE Etiquettes{
+	EtiquetteID int,
+	NomAnglais varchar(255),
+	NomFrancais varchar(255),
+};
+
+CREATE TABLE Pages{
+	PageID int,
+	Url varchar(500),
+	SiteID int,
+	State ENUM(new,retry,crawled,ignored,unavailable,archived),
+	LastVerified datetime,
+	PremiereDeco datetime,
+	DerniereDeco datetime,
+}
+
+CREATE TABLE EtiquettesSites{
+	EtiquetteID int,
+	SiteID int
+}
+
+CREATE TABLE EtiquettesPages{
+	EtiquetteID int,
+	PageID int
+}
+
+CREATE TABLE HtmlContent{
+	PageID int,
+	VersionNum int,
+	HtmlContent varchar(16384)
+}
+
+
+Requetes:
+
+Toutes les sites incluant le nombre de pages de chacun:
+
+cursor = conn.cursor()
+for s in cursor.execute("SELECT * FROM Sites"):
+	nbPages = cursor.execute("SELECT COUNT(SiteID) FROM Pages WHERE SiteID={0}".format(s["SiteID"]))
+
+
+Toutes les étiquettes incluant le nombre de sites et de pages associées à chacune:
+
+cursor = conn.cursor()
+for e in cursor.execute("SELECT * FROM Etiquettes"):
+	nbSites = cursor.execute("SELECT COUNT(SitesID) FROM EtiquettesSites WHERE EtiquetteID={0}".format(e["EtiquetteID"]))
+	nbPages = cursor.execute("SELECT COUNT(PageID) FROM EtiquettesPages WHERE EtiquetteID={0}".format(e["EtiquetteID"]))
+
+Toutes les pages d'un site incluant le nombre de versions de contenu disponibles et la taille totale de toutes les versions de chacune:
+
+cursor = conn.cursor()
+for s in cursor.execute("SELECT * FROM Sites"):
+	for p in cursor.execute("SELECT * FROM Pages WHERE SiteID={0}".format(s["SiteID"])):
+		tailles = []
+		nbVersions = cursor.execute("SELECT COUNT(*) FROM HtmlContent WHERE PageID={0}".format(p["PageID"]))
+		for html in cursor.execute("SELECT * FROM HtmlContent WHERE PageID={0}".format(p["PageID"])):
+			tailles.append(len(html["HtmlContent"]))
+
+Combien de pages d'un site donné dont l'URL inclut  "/products/"  ont du contenu plus récent que le moment X et un état spécifique.
+
+état = specifié
+moment = X
+
+"SELECT COUNT(*) FROM Pages WHERE Url LIKE "%/products/%" OR WHERE DerniereDeco <= {0} OR WHERE State={1}".format(moment, état)
+
+
+
+
+
+
